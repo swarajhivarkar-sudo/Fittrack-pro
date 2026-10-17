@@ -5,86 +5,160 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#101010">
 <title>FitTrack Pro</title>
+
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#101010;color:white;font-family:Arial,sans-serif;padding:20px}
 h1{color:#8cff00}
-.card{background:#202020;padding:18px;border-radius:15px;margin:15px 0}
-input,select,button{width:100%;padding:13px;margin:6px 0;border-radius:9px;border:0;font-size:16px}
-input,select{background:#333;color:white}
-button{background:#8cff00;color:#111;font-weight:bold}
-.stat{display:inline-block;width:48%;background:#292929;padding:15px;border-radius:12px;margin:1% 0}
+.card{background:#202020;padding:18px;border-radius:20px;margin:18px 0}
+input,select,button{width:100%;padding:14px;margin:7px 0;border-radius:12px;font-size:16px}
+input,select{background:#333;color:white;border:1px solid #555}
+button{background:#8cff00;color:#111;border:0;font-weight:bold;cursor:pointer}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat{background:#292929;padding:18px;border-radius:15px}
+.number{font-size:30px;color:#8cff00;font-weight:bold}
 small{color:#bbb}
+li{padding:12px;background:#303030;border-radius:10px;margin:8px 0}
+.delete{background:#ff5555;color:white;margin-top:8px}
 </style>
 </head>
+
 <body>
+
 <h1>💪 FitTrack Pro</h1>
 <p>Your personal workout tracker</p>
 
 <div class="card">
 <h2>📊 Dashboard</h2>
-<div class="stat">Workouts<br><h2 id="total">0</h2></div>
-<div class="stat">Exercises<br><h2 id="exercises">0</h2></div>
+<div class="stats">
+<div class="stat">Workouts<div class="number" id="workouts">0</div></div>
+<div class="stat">Exercises<div class="number" id="exercises">0</div></div>
+<div class="stat">Total Sets<div class="number" id="sets">0</div></div>
+<div class="stat">Total Reps<div class="number" id="reps">0</div></div>
+</div>
 </div>
 
 <div class="card">
 <h2>➕ Add Workout</h2>
-<input id="name" placeholder="Exercise name (e.g. Push-ups)">
-<select id="group">
-<option>Chest</option><option>Back</option>
-<option>Shoulders</option><option>Arms</option>
-<option>Legs</option><option>Core</option>
+
+<form id="workoutForm">
+<input id="name" placeholder="Exercise name (e.g. Push-ups)" required>
+
+<select id="category">
+<option>Chest</option>
+<option>Back</option>
+<option>Biceps</option>
+<option>Triceps</option>
+<option>Shoulders</option>
+<option>Legs</option>
+<option>Abs</option>
+<option>Cardio</option>
+<option>Full Body</option>
 </select>
-<input id="sets" type="number" min="1" placeholder="Sets">
-<input id="reps" type="number" min="1" placeholder="Reps">
-<input id="weight" type="number" min="0" step="0.5" placeholder="Weight (kg, optional)">
-<button onclick="addWorkout()">Save Workout</button>
+
+<input id="setCount" type="number" min="1" max="100" placeholder="Number of sets" required>
+<input id="repCount" type="number" min="1" max="1000" placeholder="Reps per set" required>
+<input id="weight" type="number" min="0" step="0.5" placeholder="Weight in kg (optional)">
+
+<button type="submit">💾 Save Workout</button>
+</form>
+</div>
+
+<div class="card">
+<h2>🎯 Fitness Goal</h2>
+<input id="goal" placeholder="Example: Exercise 4 days a week">
+<button onclick="saveGoal()">Save Goal</button>
+<p id="goalDisplay"></p>
 </div>
 
 <div class="card">
 <h2>📅 Workout History</h2>
-<div id="history">No workouts yet. Add your first workout!</div>
+<ul id="history" style="list-style:none;padding:0"></ul>
+<p id="empty">Your workouts will appear here.</p>
 </div>
 
 <script>
-let workouts=[];
-try{workouts=JSON.parse(localStorage.getItem('fittrack')||'[]')}catch(e){}
+const KEY="fittrackProWorkouts";
+const GOAL="fittrackProGoal";
+
+let workouts=JSON.parse(localStorage.getItem(KEY)||"[]");
+
+function save(){
+localStorage.setItem(KEY,JSON.stringify(workouts));
+render();
+}
+
 function render(){
-document.getElementById('total').textContent=workouts.length;
-document.getElementById('exercises').textContent=workouts.length;
-let box=document.getElementById('history');
-if(!workouts.length){box.textContent='No workouts yet. Add your first workout!';return}
-box.innerHTML='';
-workouts.slice().reverse().forEach((w,i)=>{
-let d=document.createElement('div');
-d.className='card';
-let title=document.createElement('h3');title.textContent=w.name;
-let info=document.createElement('p');
-info.textContent=w.group+' • '+w.sets+' sets × '+w.reps+' reps • '+w.weight+' kg';
-let date=document.createElement('small');date.textContent=w.date;
-let del=document.createElement('button');del.textContent='Delete';
-del.onclick=()=>{workouts.splice(workouts.length-1-i,1);save()};
-d.append(title,info,date,del);box.appendChild(d);
+document.getElementById("workouts").textContent=workouts.length;
+document.getElementById("exercises").textContent=workouts.length;
+document.getElementById("sets").textContent=workouts.reduce((a,w)=>a+w.sets,0);
+document.getElementById("reps").textContent=workouts.reduce((a,w)=>a+w.sets*w.reps,0);
+
+const list=document.getElementById("history");
+list.replaceChildren();
+document.getElementById("empty").style.display=workouts.length?"none":"block";
+
+workouts.slice().reverse().forEach(w=>{
+const li=document.createElement("li");
+const title=document.createElement("strong");
+title.textContent=w.name+" — "+w.category;
+li.appendChild(title);
+li.appendChild(document.createElement("br"));
+li.appendChild(document.createTextNode(
+w.sets+" sets × "+w.reps+" reps • "+w.weight+" kg"
+));
+li.appendChild(document.createElement("br"));
+const small=document.createElement("small");
+small.textContent=w.date;
+li.appendChild(small);
+
+const btn=document.createElement("button");
+btn.textContent="Delete";
+btn.className="delete";
+btn.onclick=()=>{
+workouts=workouts.filter(x=>x.id!==w.id);
+save();
+};
+li.appendChild(btn);
+list.appendChild(li);
 });
 }
-function save(){
-localStorage.setItem('fittrack',JSON.stringify(workouts));render();
-}
-function addWorkout(){
-let name=document.getElementById('name').value.trim();
-let sets=Number(document.getElementById('sets').value);
-let reps=Number(document.getElementById('reps').value);
-let weight=document.getElementById('weight').value||'0';
-if(!name||sets<1||reps<1){alert('Enter exercise name, sets and reps');return}
-workouts.push({name,group:document.getElementById('group').value,sets,reps,weight,date:new Date().toLocaleString()});
+
+document.getElementById("workoutForm").addEventListener("submit",e=>{
+e.preventDefault();
+
+const w={
+id:Date.now()+Math.random(),
+name:document.getElementById("name").value.trim(),
+category:document.getElementById("category").value,
+sets:Number(document.getElementById("setCount").value),
+reps:Number(document.getElementById("repCount").value),
+weight:Number(document.getElementById("weight").value)||0,
+date:new Date().toLocaleString()
+};
+
+if(!w.name||w.sets<1||w.reps<1)return;
+
+workouts.push(w);
 save();
-document.getElementById('name').value='';
-document.getElementById('sets').value='';
-document.getElementById('reps').value='';
-document.getElementById('weight').value='';
-alert('Workout saved! 💪');
+e.target.reset();
+});
+
+function saveGoal(){
+const goal=document.getElementById("goal").value.trim();
+localStorage.setItem(GOAL,goal);
+showGoal();
+} 
+
+function showGoal(){
+const goal=localStorage.getItem(GOAL)||"";
+document.getElementById("goal").value=goal;
+document.getElementById("goalDisplay").textContent=goal?"Your goal: "+goal:"No goal set yet.";
 }
+
 render();
+showGoal();
 </script>
+
 </body>
 </html>
