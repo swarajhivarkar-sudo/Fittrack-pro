@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101010">
+<title>FitTrack Pro</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101010;color:white;font-family:Arial,sans-serif;padding:20px}
+h1{color:#8cff00}
+.card{background:#202020;padding:18px;border-radius:15px;margin:15px 0}
+input,select,button{width:100%;padding:13px;margin:6px 0;border-radius:9px;border:0;font-size:16px}
+input,select{background:#333;color:white}
+button{background:#8cff00;color:#111;font-weight:bold}
+.stat{display:inline-block;width:48%;background:#292929;padding:15px;border-radius:12px;margin:1% 0}
+small{color:#bbb}
+</style>
+</head>
+<body>
+<h1>💪 FitTrack Pro</h1>
+<p>Your personal workout tracker</p>
+
+<div class="card">
+<h2>📊 Dashboard</h2>
+<div class="stat">Workouts<br><h2 id="total">0</h2></div>
+<div class="stat">Exercises<br><h2 id="exercises">0</h2></div>
+</div>
+
+<div class="card">
+<h2>➕ Add Workout</h2>
+<input id="name" placeholder="Exercise name (e.g. Push-ups)">
+<select id="group">
+<option>Chest</option><option>Back</option>
+<option>Shoulders</option><option>Arms</option>
+<option>Legs</option><option>Core</option>
+</select>
+<input id="sets" type="number" min="1" placeholder="Sets">
+<input id="reps" type="number" min="1" placeholder="Reps">
+<input id="weight" type="number" min="0" step="0.5" placeholder="Weight (kg, optional)">
+<button onclick="addWorkout()">Save Workout</button>
+</div>
+
+<div class="card">
+<h2>📅 Workout History</h2>
+<div id="history">No workouts yet. Add your first workout!</div>
+</div>
+
+<script>
+let workouts=[];
+try{workouts=JSON.parse(localStorage.getItem('fittrack')||'[]')}catch(e){}
+function render(){
+document.getElementById('total').textContent=workouts.length;
+document.getElementById('exercises').textContent=workouts.length;
+let box=document.getElementById('history');
+if(!workouts.length){box.textContent='No workouts yet. Add your first workout!';return}
+box.innerHTML='';
+workouts.slice().reverse().forEach((w,i)=>{
+let d=document.createElement('div');
+d.className='card';
+let title=document.createElement('h3');title.textContent=w.name;
+let info=document.createElement('p');
+info.textContent=w.group+' • '+w.sets+' sets × '+w.reps+' reps • '+w.weight+' kg';
+let date=document.createElement('small');date.textContent=w.date;
+let del=document.createElement('button');del.textContent='Delete';
+del.onclick=()=>{workouts.splice(workouts.length-1-i,1);save()};
+d.append(title,info,date,del);box.appendChild(d);
+});
+}
+function save(){
+localStorage.setItem('fittrack',JSON.stringify(workouts));render();
+}
+function addWorkout(){
+let name=document.getElementById('name').value.trim();
+let sets=Number(document.getElementById('sets').value);
+let reps=Number(document.getElementById('reps').value);
+let weight=document.getElementById('weight').value||'0';
+if(!name||sets<1||reps<1){alert('Enter exercise name, sets and reps');return}
+workouts.push({name,group:document.getElementById('group').value,sets,reps,weight,date:new Date().toLocaleString()});
+save();
+document.getElementById('name').value='';
+document.getElementById('sets').value='';
+document.getElementById('reps').value='';
+document.getElementById('weight').value='';
+alert('Workout saved! 💪');
+}
+render();
+</script>
+</body>
+</html>
